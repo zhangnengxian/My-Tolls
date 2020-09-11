@@ -1,9 +1,9 @@
 package com.zhangnx.tools.utils;
 
 
+import com.zhangnx.tools.beans.DateVo;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -41,8 +41,8 @@ public class DateUtils {
 	}
 
 	public static String format(Date date,String formatStr) {
-		SimpleDateFormat formatter = new SimpleDateFormat(formatStr);
-		return formatter.format(date);
+		SimpleDateFormat sdf = new SimpleDateFormat(formatStr);
+		return sdf.format(date);
 	}
 
 
@@ -79,9 +79,9 @@ public class DateUtils {
 	 * @param dates
 	 * @return
 	 */
-	public static boolean isNull(Date... dates) {
-		for (Date date : dates) {
-			if (date == null) {
+	public static boolean isNull(Object... dates) {
+		for (Object date : dates) {
+			if (O.isEmpty(date)){
 				return true;
 			}
 		}
@@ -142,12 +142,11 @@ public class DateUtils {
 	 * @param minutes
 	 * @return
 	 */
-	public static String getNewDateAddMinutes(Date date,int minutes){
-		Calendar newTime = Calendar.getInstance();
-		newTime.setTime(date);
-		newTime.add(Calendar.MINUTE,minutes);
-		Date newDate=newTime.getTime();
-		return format(newDate);
+	public static Date getNewDateAddMinutes(Date date,int minutes){
+		Calendar c = Calendar.getInstance();
+		c.setTime(date);
+		c.add(Calendar.MINUTE,minutes);
+		 return c.getTime();
 	}
 
 	/**
@@ -160,10 +159,10 @@ public class DateUtils {
 		if (date==null){
 			return null;
 		}
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTime(date);
-		calendar.add(Calendar.DAY_OF_MONTH, days);
-		return calendar.getTime();
+		Calendar c = Calendar.getInstance();
+		c.setTime(date);
+		c.add(Calendar.DAY_OF_MONTH, days);
+		return c.getTime();
 	}
 
 
@@ -212,7 +211,7 @@ public class DateUtils {
 	 * @return
 	 */
 	public static Date localTimeToDate(LocalDateTime localDate) {
-		if (localDate == null) {
+		if (isNull(localDate)){
 			return null;
 		}
 		return Date.from(localDate.atZone(ZoneId.systemDefault()).toInstant());
@@ -393,7 +392,90 @@ public class DateUtils {
 
 
 	public static void main(String[] args) throws Exception {
+		List<DateVo> dateVoList = new ArrayList<>();
+		Date date = new Date();
+		dateVoList.add(new DateVo(date,getNewDateAddMinutes(date,60)));
+		dateVoList.add(new DateVo(getNewDateAddMinutes(date,60),getNewDateAddMinutes(date,120)));
+		dateVoList.add(new DateVo(getNewDateAddMinutes(date,120),getNewDateAddMinutes(date,180)));
+		dateVoList.add(new DateVo(getNewDateAddMinutes(date,180),getNewDateAddMinutes(date,240)));
+
+		Date startDate = getNewDateAddMinutes(date,0);
+		Date endDate = getNewDateAddMinutes(date,240);
+
+		List<DateVo> dateVoList1 = removeRedundancyDate(dateVoList, startDate, endDate);
+
+
+		for (DateVo v:dateVoList) {
+			System.out.println(format(v.getStartDate())+" 至 "+format(v.getEndDate()));
+		}
+
+		System.out.println("=================================================================");
+		for (DateVo v:dateVoList1) {
+			System.out.println(format(v.getStartDate())+" 至 "+format(v.getEndDate()));
+		}
+
 
 	}
 
+
+	/**
+	 * 去除冗余的时间
+	 * @param dateList
+	 * @param startDate
+	 * @param endDate
+	 * @return
+	 */
+	public static List<DateVo> removeRedundancyDate(List<DateVo> dateList, Date startDate, Date endDate){
+		List<DateVo> dateVoList = new ArrayList<>();
+		if (isNull(startDate,endDate)){
+			return dateVoList;
+		}
+		int diffMillisecond = 1000;
+
+		for (int i = 0; i <dateList.size() ; i++) {
+			DateVo vo = dateList.get(i);
+			if (isNull(vo.getStartDate(),vo.getEndDate())){
+				continue;
+			}
+
+			Date preEndDate = getNewDateAddMinutes(startDate, -1);
+			Date nextStartDate = getNewDateAddMinutes(endDate, 1);
+			if (i>0){
+				preEndDate = dateList.get(i-1).getEndDate();
+			}
+			if (i<dateList.size()-1){
+				nextStartDate = dateList.get(i+1).getStartDate();
+			}
+
+			if (preEndDate.getTime()<=startDate.getTime()  && startDate.getTime()<vo.getStartDate().getTime() ){
+				if (endDate.getTime()<vo.getStartDate().getTime()){
+					if (endDate.getTime()-startDate.getTime()>diffMillisecond) {
+						dateVoList.add(new DateVo(startDate, endDate));
+					}
+				}else {
+					if (vo.getStartDate().getTime()-startDate.getTime()>diffMillisecond) {
+						dateVoList.add(new DateVo(startDate, vo.getStartDate()));
+					}
+				}
+			}
+
+			if (startDate.getTime()<vo.getEndDate().getTime() && nextStartDate.getTime()<=endDate.getTime()){
+				if (nextStartDate.getTime()-vo.getEndDate().getTime()>diffMillisecond) {
+					dateVoList.add(new DateVo(vo.getEndDate(), nextStartDate));
+				}
+			}
+
+			if (vo.getEndDate().getTime()<endDate.getTime() && endDate.getTime()<nextStartDate.getTime()){
+				if (startDate.getTime()<vo.getEndDate().getTime()){
+					if (endDate.getTime()-vo.getEndDate().getTime()>diffMillisecond) {
+						dateVoList.add(new DateVo(vo.getEndDate(), endDate));
+					}
+				}
+			}
+		}
+		return dateVoList;
+	}
+
+
 }
+
