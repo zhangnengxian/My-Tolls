@@ -8,10 +8,8 @@ import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 日期工具类
@@ -233,7 +231,7 @@ public class DateUtils {
 	 *                豪秒:Calendar.MILLISECOND]
 	 * @return 2020|12|31|23|59|59|999
 	 */
-	public static int getCutDate(Date date,int type) {
+	public static int getDateCutStr(Date date,int type) {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(date);
 		if (type==Calendar.MONTH) {
@@ -334,9 +332,12 @@ public class DateUtils {
 	 * @param minute
 	 * @return
 	 */
-	public static String getHms(int minute){
-		int h = minute/60;
-		int m = minute%60;
+	public static String getHms(long minute){
+		long h = minute/60;
+		if (h>=24){
+			h=h%24;
+		}
+		long m = minute%60;
 
 		StringBuilder Hms = new StringBuilder();
 		Hms.append(h<10? "0"+h : h).append(":");
@@ -397,10 +398,10 @@ public class DateUtils {
 		dateVoList.add(new DateVo(date,getNewDateAddMinutes(date,60)));
 		dateVoList.add(new DateVo(getNewDateAddMinutes(date,60),getNewDateAddMinutes(date,120)));
 		dateVoList.add(new DateVo(getNewDateAddMinutes(date,120),getNewDateAddMinutes(date,180)));
-		dateVoList.add(new DateVo(getNewDateAddMinutes(date,180),getNewDateAddMinutes(date,240)));
+		dateVoList.add(new DateVo(getNewDateAddMinutes(date,200),getNewDateAddMinutes(date,240)));
 
-		Date startDate = getNewDateAddMinutes(date,0);
-		Date endDate = getNewDateAddMinutes(date,240);
+		Date startDate = getNewDateAddMinutes(date,-2);
+		Date endDate = getNewDateAddMinutes(date,242);
 
 		List<DateVo> dateVoList1 = removeRedundancyDate(dateVoList, startDate, endDate);
 
@@ -427,52 +428,74 @@ public class DateUtils {
 	 */
 	public static List<DateVo> removeRedundancyDate(List<DateVo> dateList, Date startDate, Date endDate){
 		List<DateVo> dateVoList = new ArrayList<>();
-		if (isNull(startDate,endDate)){
+		if (isNull(startDate,endDate) || O.isEmpty(dateList) || dateList.size()<1){
+			dateVoList.add(new DateVo(startDate,endDate));
 			return dateVoList;
 		}
+
+		dateList = dateList.stream().sorted(Comparator.comparing(DateVo::getStartDate)).collect(Collectors.toList());
+
 		int diffMillisecond = 1000;
 
 		for (int i = 0; i <dateList.size() ; i++) {
-			DateVo vo = dateList.get(i);
-			if (isNull(vo.getStartDate(),vo.getEndDate())){
+			if (isNull(dateList.get(i).getStartDate(), dateList.get(i).getEndDate())) {
 				continue;
 			}
 
-			Date preEndDate = getNewDateAddMinutes(startDate, -1);
-			Date nextStartDate = getNewDateAddMinutes(endDate, 1);
-			if (i>0){
-				preEndDate = dateList.get(i-1).getEndDate();
-			}
-			if (i<dateList.size()-1){
-				nextStartDate = dateList.get(i+1).getStartDate();
+			if (i==0) {
+				if (startDate.getTime() < dateList.get(0).getStartDate().getTime()) {
+					if (endDate.getTime() <= dateList.get(0).getStartDate().getTime()) {
+						if (endDate.getTime() - startDate.getTime() > diffMillisecond) {
+							dateVoList.add(new DateVo(startDate, endDate));
+						}
+					} else {
+						if (dateList.get(0).getStartDate().getTime() - startDate.getTime() > diffMillisecond) {
+							dateVoList.add(new DateVo(startDate, dateList.get(0).getStartDate()));
+						}
+					}
+				}
 			}
 
-			if (preEndDate.getTime()<=startDate.getTime()  && startDate.getTime()<vo.getStartDate().getTime() ){
-				if (endDate.getTime()<vo.getStartDate().getTime()){
-					if (endDate.getTime()-startDate.getTime()>diffMillisecond) {
-						dateVoList.add(new DateVo(startDate, endDate));
+			if (i>0 && i<dateList.size()-1){
+				if (startDate.getTime()<=dateList.get(i).getEndDate().getTime()){
+					if (endDate.getTime()<=dateList.get(i+1).getStartDate().getTime()){
+						if (endDate.getTime()-dateList.get(i).getEndDate().getTime()>diffMillisecond) {
+							dateVoList.add(new DateVo(dateList.get(i).getEndDate(), endDate));
+						}
+					}else {
+						if (dateList.get(i+1).getStartDate().getTime()-dateList.get(i).getEndDate().getTime()>diffMillisecond) {
+							dateVoList.add(new DateVo(dateList.get(i).getEndDate(), dateList.get(i + 1).getStartDate()));
+						}
 					}
+
 				}else {
-					if (vo.getStartDate().getTime()-startDate.getTime()>diffMillisecond) {
-						dateVoList.add(new DateVo(startDate, vo.getStartDate()));
+					if (endDate.getTime()<=dateList.get(i+1).getStartDate().getTime()){
+						if (endDate.getTime()-startDate.getTime()>diffMillisecond) {
+							dateVoList.add(new DateVo(startDate, endDate));
+						}
+					}else {
+						if (dateList.get(i+1).getStartDate().getTime()-startDate.getTime()>diffMillisecond) {
+							dateVoList.add(new DateVo(startDate, dateList.get(i + 1).getStartDate()));
+						}
 					}
 				}
 			}
 
-			if (startDate.getTime()<vo.getEndDate().getTime() && nextStartDate.getTime()<=endDate.getTime()){
-				if (nextStartDate.getTime()-vo.getEndDate().getTime()>diffMillisecond) {
-					dateVoList.add(new DateVo(vo.getEndDate(), nextStartDate));
-				}
-			}
-
-			if (vo.getEndDate().getTime()<endDate.getTime() && endDate.getTime()<nextStartDate.getTime()){
-				if (startDate.getTime()<vo.getEndDate().getTime()){
-					if (endDate.getTime()-vo.getEndDate().getTime()>diffMillisecond) {
-						dateVoList.add(new DateVo(vo.getEndDate(), endDate));
+			if (i==dateList.size()-1){
+				if (endDate.getTime()>dateList.get(dateList.size()-1).getEndDate().getTime()){
+					if (startDate.getTime()<dateList.get(dateList.size()-1).getEndDate().getTime()){
+						if (endDate.getTime()-dateList.get(dateList.size()-1).getEndDate().getTime()>diffMillisecond) {
+							dateVoList.add(new DateVo(dateList.get(dateList.size() - 1).getEndDate(), endDate));
+						}
+					}else {
+						if (endDate.getTime()-startDate.getTime()>diffMillisecond) {
+							dateVoList.add(new DateVo(startDate, endDate));
+						}
 					}
 				}
 			}
 		}
+
 		return dateVoList;
 	}
 
