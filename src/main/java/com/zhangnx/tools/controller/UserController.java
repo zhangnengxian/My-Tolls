@@ -2,8 +2,8 @@ package com.zhangnx.tools.controller;
 
 import java.util.List;
 
-import com.zhangnx.tools.beans.User;
 import com.zhangnx.tools.dao.UserDao;
+import com.zhangnx.tools.entity.User;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

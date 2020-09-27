@@ -1,4 +1,4 @@
-package com.zhangnx.tools.beans;
+package com.zhangnx.tools.vo;
 
 import lombok.Data;
 

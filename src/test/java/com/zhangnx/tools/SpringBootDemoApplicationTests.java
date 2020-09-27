@@ -1,4 +1,4 @@
-package com.hsbc.SpringBootDemo;
+package com.zhangnx.tools;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

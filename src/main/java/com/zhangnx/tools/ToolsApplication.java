@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@MapperScan("com.springboot.demo.mapper")
+@MapperScan("com.zhangnx.tools.**")
 public class ToolsApplication {
 
 	public static void main(String[] args) {

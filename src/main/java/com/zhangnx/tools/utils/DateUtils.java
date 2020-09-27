@@ -1,7 +1,7 @@
 package com.zhangnx.tools.utils;
 
 
-import com.zhangnx.tools.beans.DateVo;
+import com.zhangnx.tools.vo.DateVo;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import java.text.ParsePosition;

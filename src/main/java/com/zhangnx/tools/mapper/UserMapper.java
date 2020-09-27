@@ -1,10 +1,13 @@
 package com.zhangnx.tools.mapper;
 
-import java.util.List;
 
-import com.zhangnx.tools.beans.User;
+import com.zhangnx.tools.entity.User;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+
 
 public interface UserMapper {
 
